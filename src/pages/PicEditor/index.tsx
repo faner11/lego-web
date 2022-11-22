@@ -1,17 +1,19 @@
-import {
-  BoxPlotOutlined,
-  FontSizeOutlined,
-  PictureOutlined
-} from '@ant-design/icons'
 import { FormDrawer } from '@formily/antd'
-import { Button, Card, Col, Drawer, PageHeader, Row } from 'antd'
+import { useMutation } from '@tanstack/react-query'
+import { Button, Drawer, message, PageHeader } from 'antd'
 import { fabric } from 'fabric'
 import { isEmpty } from 'lodash-es'
 import { nanoid } from 'nanoid'
 import type { FC } from 'react'
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useEffectOnce, useKey } from 'react-use'
+import { useRecoilState } from 'recoil'
 
+import { templateApi } from '@/sevrices/api'
+import { api } from '@/utils'
+
+import Panels from './components/Panels'
+import { FabricAtom } from './components/panels.sevrice'
 import SettingForm from './components/SettingForm'
 import SortableList from './components/SortableList'
 const BASE_FIELD = ['name', 'data', 'background', 'width', 'height']
@@ -19,7 +21,23 @@ const PicEditor: FC = () => {
   const fabricRef = useRef<fabric.Canvas | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [activeName, setActiveName] = useState<string>('')
-
+  const [, setFabricAtom] = useRecoilState(FabricAtom)
+  const saveMutaion = useMutation(
+    () => {
+      const json = fabricRef.current?.toJSON(BASE_FIELD)
+      return api.post(templateApi.save, {
+        json: {
+          template: json,
+          name: nanoid(8)
+        }
+      })
+    },
+    {
+      onSuccess: () => {
+        message.success('保存成功')
+      }
+    }
+  )
   const removeItem = () => {
     const active = fabricRef.current?.getActiveObject()
     if (active != null) {
@@ -58,63 +76,17 @@ const PicEditor: FC = () => {
     fabricRef.current?.on('selection:cleared', (e) => {
       setActiveName('')
     })
+    setFabricAtom(fabricRef.current)
 
     return () => {
       fabricRef.current?.dispose()
     }
   })
   const activeObj = fabricRef.current?.getActiveObject()
-  const addText = () => {
-    const text = new fabric.IText('LEGO', {
-      name: nanoid(8),
-      fontFamily: '-apple-system',
-      data: {
-        canEdit: true
-      }
-    })
-    fabricRef.current?.add(text)
-  }
-  const buts = [
-    {
-      text: '元素',
-      icon: <BoxPlotOutlined />,
-      onClick: () => {
-        const text = new fabric.Rect({
-          name: nanoid(8),
-          width: 100,
-          height: 100,
-          fill: '#ddadad'
-        })
-        fabricRef.current?.add(text)
-      }
-    },
-    {
-      text: '文字',
-      icon: <FontSizeOutlined />,
-      onClick: addText
-    },
-    {
-      text: '图片',
-      icon: <PictureOutlined />,
-      onClick: () => {
-        fabric.Image.fromURL(
-          'https://cdn.indexed.cn/statics/img/transparentBg.png',
-          (oImg) => {
-            oImg.scale(0.5)
-            fabricRef.current?.add(oImg)
-          },
-          {
-            name: nanoid(8),
-            crossOrigin: 'anonymous',
-            data: {
-              canEditImage: true
-            }
-          }
-        )
-      }
-    }
-  ]
 
+  const canvasMemo = useMemo(() => {
+    return <canvas ref={canvasRef} />
+  }, [])
   return (
     <div
       style={{
@@ -128,16 +100,10 @@ const PicEditor: FC = () => {
       <PageHeader
         title='图片编辑器'
         style={{
-          background: '#a0acfc'
+          background: '#93a0f4'
         }}
         extra={
           <Button.Group>
-            <Button
-              onClick={() => {
-                setActiveName('i-canvas')
-              }}>
-              画布设置
-            </Button>
             <Button
               onClick={() => {
                 FormDrawer('图层设置', () => {
@@ -171,29 +137,26 @@ const PicEditor: FC = () => {
               }}>
               导出json
             </Button>
+            <Button
+              onClick={() => {
+                saveMutaion.mutateAsync()
+              }}>
+              保存新模版
+            </Button>
           </Button.Group>
         }
       />
-      <Row wrap={false} className='h-full'>
-        <Col span={2}>
-          <Card>
-            <Row gutter={[16, 8]}>
-              {buts.map((p) => {
-                const onClick = p.onClick
-                return (
-                  <Button key={p.text} onClick={onClick} block icon={p.icon} />
-                )
-              })}
-            </Row>
-          </Card>
-        </Col>
 
-        <Col span={22} className=' h-full'>
-          <div className='flex justify-center items-center bg-slate-100 h-full'>
-            <canvas ref={canvasRef} />
+      <div className='flex flex-1 '>
+        <Panels />
+        <div className='flex flex-1 flex-col relative  overflow-hidden'>
+          <div className='absolute w-fill h-full inset-0'>
+            <div className='flex justify-center items-center bg-slate-100 h-full'>
+              {canvasMemo}
+            </div>
           </div>
-        </Col>
-      </Row>
+        </div>
+      </div>
       <Drawer
         title={activeName}
         open={!isEmpty(activeName)}
@@ -201,54 +164,27 @@ const PicEditor: FC = () => {
         onClose={() => {
           setActiveName('')
         }}>
-        {activeName !== 'i-canvas' ? (
-          <SettingForm
-            key={activeName}
-            type={activeObj?.type!}
-            value={activeObj?.toDatalessObject(BASE_FIELD)}
-            onChange={(name, value) => {
-              if (name !== 'src') {
-                activeObj?.set(name, value)
-                fabricRef.current?.renderAll()
-              } else {
-                ;(activeObj as fabric.Image).setSrc(
-                  value,
-                  () => {
-                    fabricRef.current?.renderAll()
-                  },
-                  {
-                    crossOrigin: 'anonymous'
-                  }
-                )
-              }
-            }}
-          />
-        ) : (
-          <SettingForm
-            key={activeName}
-            type='i-canvas'
-            value={fabricRef.current?.toDatalessObject(BASE_FIELD)}
-            onChange={(name, value) => {
-              console.log(name, value)
-
-              switch (name) {
-                case 'width': {
-                  fabricRef.current?.setWidth(value)
-                  break
-                }
-                case 'height': {
-                  fabricRef.current?.setWidth(value)
-                  break
-                }
-                case 'background': {
-                  fabricRef.current?.setBackgroundColor(value, () => {})
-                }
-              }
+        <SettingForm
+          key={activeName}
+          type={activeObj?.type!}
+          value={activeObj?.toDatalessObject(BASE_FIELD)}
+          onChange={(name, value) => {
+            if (name !== 'src') {
+              activeObj?.set(name, value)
               fabricRef.current?.renderAll()
-              console.log(name, value)
-            }}
-          />
-        )}
+            } else {
+              ;(activeObj as fabric.Image).setSrc(
+                value,
+                () => {
+                  fabricRef.current?.renderAll()
+                },
+                {
+                  crossOrigin: 'anonymous'
+                }
+              )
+            }
+          }}
+        />
       </Drawer>
     </div>
   )

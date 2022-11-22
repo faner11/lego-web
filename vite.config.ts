@@ -21,7 +21,15 @@ export default defineConfig({
     }
   },
   server: {
-    cors: true
+    cors: true,
+    proxy: {
+      '/lego-api': {
+        changeOrigin: true,
+        target: 'http://localhost:3000/',
+        rewrite: (url) => url.replace(/^\/lego-api/, '')
+      }
+    },
+    host: '0.0.0.0'
   },
   resolve: {
     alias: [

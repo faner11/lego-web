@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* 兼容tailwind和antd同时使用时 svg不垂直居中问题*/
+.ant-image-preview-img {
+  display: unset
+}
+
+svg {
+  vertical-align: initial
+}

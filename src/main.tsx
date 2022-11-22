@@ -11,7 +11,7 @@ import { BrowserRouter as Router } from 'react-router-dom'
 import { RecoilRoot } from 'recoil'
 
 import App from './App'
-import { jsonPost } from './utils'
+import { api } from './utils'
 moment.locale('zh-cn')
 
 const queryClient = new QueryClient({
@@ -22,9 +22,11 @@ const queryClient = new QueryClient({
         console.log(err)
       },
       queryFn: ({ queryKey }) => {
-        return jsonPost(queryKey[0] as string, {
-          json: queryKey[1]
-        })
+        return api
+          .get(queryKey[0] as string, {
+            json: queryKey[1]
+          })
+          .json()
       }
     },
     mutations: {

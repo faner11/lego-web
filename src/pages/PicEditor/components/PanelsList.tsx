@@ -10,24 +10,12 @@ export const BASE_ITEMS = [
     name: '模版'
   },
   {
-    id: 'customize',
-    name: '定制'
-  },
-  {
     id: 'elements',
     name: '元素'
   },
   {
-    id: 'images',
-    name: '图片'
-  },
-  {
-    id: 'uploads',
-    name: 'Uploads'
-  },
-  {
-    id: 'text',
-    name: 'Text'
+    id: 'customize',
+    name: '定制'
   },
   {
     id: 'layers',

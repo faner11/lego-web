@@ -2,9 +2,6 @@ import { lazy } from 'react'
 import type { RouteObject } from 'react-router-dom'
 import { Navigate } from 'react-router-dom'
 
-// import BasicLayout from '@/layouts/BasicLayout'
-import ImgEditor from './pages/ImgEditor'
-
 const NotFound = lazy(() => import('@/components/NotFound'))
 
 const PicEditor = lazy(() => import('@/pages/PicEditor'))
@@ -23,10 +20,6 @@ const routerConfig: RouteObject[] = [
         element: <NotFound />
       }
     ]
-  },
-  {
-    path: '/img-editor',
-    element: <ImgEditor />
   },
   {
     path: '/pic-editor',

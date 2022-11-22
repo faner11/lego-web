@@ -192,13 +192,13 @@ export const rectSchema: ISchema = {
 export const canvasSchema: ISchema = {
   properties: {
     width: {
-      title: '宽度(像素)',
+      title: '宽度(px)',
       type: 'string',
       'x-component': 'NumberPicker',
       'x-decorator': 'FormItem'
     },
     height: {
-      title: '宽度(像素)',
+      title: '高度px',
       type: 'string',
       'x-component': 'NumberPicker',
       'x-decorator': 'FormItem'
